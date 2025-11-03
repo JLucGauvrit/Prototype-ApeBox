@@ -1,31 +1,13 @@
-#version: "3.9"
+version: "3.9"
 services:
   apeui:
-    build: ./apeui
+    build:
+      context: ./apeui
+    container_name: apebox-ui
     ports:
-      - "3000:3000"
-    environment:
-      - ORIGIN=http://localhost:3000
-    restart: unless-stopped
+      - "3000:80"
     depends_on:
-      - apebackend
-
-  apebackend:
-    build: ./apebackend
-    ports:
-      - "8080:8080"
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-    restart: unless-stopped
-    networks:
-      - apebox-network
-
-  vllm:
-    image: vllm/vllm-openai:latest
-    ports:
-      - "8000:8000"
-    volumes:
-      - ./data/vllm:/data
+      - backend
     restart: unless-stopped
 
   n8n:
@@ -39,68 +21,5 @@ services:
       - N8N_BASIC_AUTH_USER=admin
       - N8N_BASIC_AUTH_PASSWORD=change_me
     restart: unless-stopped
-    depends_on:
-      - postgres
 
-  nextcloud:
-    image: nextcloud
-    ports:
-      - "8081:80"
-    volumes:
-      - ./data/nextcloud:/var/www/html
-    restart: unless-stopped
 
-  postgres:
-    image: postgres:16-alpine
-    environment:
-      POSTGRES_USER: apebox
-      POSTGRES_PASSWORD: apebox_password
-      POSTGRES_DB: apeboxdb
-    volumes:
-      - ./data/db:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
-    restart: unless-stopped
-
-  qdrant:
-    image: qdrant/qdrant:latest
-    ports:
-      - "6333:6333"
-    volumes:
-      - ./data/qdrant:/qdrant/storage
-    restart: unless-stopped
-
-  traefik:
-    image: traefik:v2.10
-    command:
-      - --providers.docker
-      - --entrypoints.web.address=:80
-      - --entrypoints.websecure.address=:443
-      - --api.insecure=true
-    ports:
-      - "80:80"
-      - "443:443"
-      - "8082:8080"
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-
-  keycloak:
-    image: quay.io/keycloak/keycloak:latest
-    command: start-dev
-    environment:
-      - KEYCLOAK_ADMIN=admin
-      - KEYCLOAK_ADMIN_PASSWORD=admin_password
-    ports:
-      - "8083:8080"
-    restart: unless-stopped
-
-networks:
-  apebox-network:
-    driver: bridge
-
-volumes:
-  vllm-data:
-  n8n-data:
-  nextcloud-data:
-  db-data:
-  qdrant-data:
